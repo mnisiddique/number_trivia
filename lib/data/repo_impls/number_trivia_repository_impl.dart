@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:number_trivia/core/error/exception.dart';
-import 'package:number_trivia/core/platform/network_info.dart';
+import 'package:number_trivia/core/network/network_info.dart';
 import 'package:number_trivia/data/data_sources/number_trivia_local_data_source.dart';
 import 'package:number_trivia/data/data_sources/number_trivia_remote_data_sources.dart';
 import 'package:number_trivia/domain/entities/number_trivia.dart';
