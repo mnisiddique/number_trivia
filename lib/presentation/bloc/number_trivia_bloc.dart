@@ -1,15 +1,53 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
+import 'package:number_trivia/core/util/input_converter.dart';
 import 'package:number_trivia/domain/entities/number_trivia.dart';
+import 'package:number_trivia/domain/usecases/get_concrete_number_trivia.dart';
+import 'package:number_trivia/domain/usecases/get_random_number_trivia.dart';
 
 part 'number_trivia_event.dart';
 part 'number_trivia_state.dart';
 
+const String SERVER_FAILURE_MESSAGE = 'Server Failure';
+const String CACHE_FAILURE_MESSAGE = 'Cache Failure';
+const String INVALID_INPUT_FAILURE_MESSAGE =
+    'Invalid Input - The number must be a positive integer or zero.';
+
 class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
-  NumberTriviaBloc() : super(Loading()) {
-    on<NumberTriviaEvent>((event, emit) {
-      // TODO: implement event handler
-    });
+  final GetConcreteNumberTrivia concreteNumberTrivia;
+  final GetRandomNumberTrivia randomNumberTrivia;
+  final InputConverter inputConverter;
+
+  NumberTriviaBloc({
+    @required GetConcreteNumberTrivia concrete,
+    @required GetRandomNumberTrivia random,
+    @required InputConverter converter,
+  })  : assert(concrete != null),
+        assert(random != null),
+        assert(converter != null),
+        concreteNumberTrivia = concrete,
+        randomNumberTrivia = random,
+        inputConverter = converter,
+        super(Empty()) {
+    on<NumberTriviaEvent>(_numberTriviaEventHandler);
+  }
+
+  FutureOr<void> _numberTriviaEventHandler(
+    NumberTriviaEvent event,
+    Emitter<NumberTriviaState> stateEmitter,
+  ) {
+    if (event is ConcreteNumberTriviaEvent) {
+      final inputEither =
+          inputConverter.stringToUnsignedInteger(event.numberString);
+      inputEither.fold(
+        (failure) async* {
+          yield Error(message: INVALID_INPUT_FAILURE_MESSAGE);
+        },
+        (integer) => throw UnimplementedError(),
+      );
+    }
   }
 }
