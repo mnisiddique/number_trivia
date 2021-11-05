@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:number_trivia/core/error/failures.dart';
+import 'package:number_trivia/core/usecases/usecase.dart';
 import 'package:number_trivia/core/util/input_converter.dart';
 import 'package:number_trivia/domain/entities/number_trivia.dart';
 import 'package:number_trivia/domain/usecases/get_concrete_number_trivia.dart';
@@ -38,16 +41,52 @@ class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
   FutureOr<void> _numberTriviaEventHandler(
     NumberTriviaEvent event,
     Emitter<NumberTriviaState> stateEmitter,
-  ) {
+  ) async {
+    // switch (event.runtimeType) {
+    //   case ConcreteNumberTriviaEvent:
+    //     _handleConcreteNumberTriviaEvent((event as ConcreteNumberTriviaEvent).numberString);
+    // }
     if (event is ConcreteNumberTriviaEvent) {
+      //stateEmitter.onEach(concreteNumberTriviaStream(event.numberString), onData: onData)
       final inputEither =
           inputConverter.stringToUnsignedInteger(event.numberString);
+
+      stateEmitter(Empty());
       inputEither.fold(
-        (failure) async* {
-          yield Error(message: INVALID_INPUT_FAILURE_MESSAGE);
+        (failure) =>
+            stateEmitter(Error(message: INVALID_INPUT_FAILURE_MESSAGE)),
+        (integer) async {
+          stateEmitter(Loading());
+          final triviaOrFailure =
+              await concreteNumberTrivia(NumberParam(integer));
+          stateEmitter(_failureOrTriviaState(triviaOrFailure));
         },
-        (integer) => throw UnimplementedError(),
       );
+    } else if (event is RandomNumberTriviaEvent) {
+      stateEmitter(Loading());
+      final failureOrRandomTrivia = await randomNumberTrivia(NoParams());
+      stateEmitter(_failureOrTriviaState(failureOrRandomTrivia));
     }
   }
+
+  String _mapFailureToMessage(Failure failure) {
+    switch (failure.runtimeType) {
+      case ServerFailure:
+        return SERVER_FAILURE_MESSAGE;
+      case CacheFailure:
+        return CACHE_FAILURE_MESSAGE;
+      default:
+        return "Unknown Error";
+    }
+  }
+
+  NumberTriviaState _failureOrTriviaState(
+      Either<Failure, NumberTrivia> either) {
+    return either.fold(
+      (failure) => Error(message: _mapFailureToMessage(failure)),
+      (numberTrivia) => Loaded(numberTivia: numberTrivia),
+    );
+  }
+
+  void _handleConcreteNumberTriviaEvent(numberString) {}
 }
