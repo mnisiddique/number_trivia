@@ -42,30 +42,20 @@ class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
     NumberTriviaEvent event,
     Emitter<NumberTriviaState> stateEmitter,
   ) async {
-    // switch (event.runtimeType) {
-    //   case ConcreteNumberTriviaEvent:
-    //     _handleConcreteNumberTriviaEvent((event as ConcreteNumberTriviaEvent).numberString);
-    // }
-    if (event is ConcreteNumberTriviaEvent) {
-      //stateEmitter.onEach(concreteNumberTriviaStream(event.numberString), onData: onData)
-      final inputEither =
-          inputConverter.stringToUnsignedInteger(event.numberString);
+    switch (event.runtimeType) {
+      case ConcreteNumberTriviaEvent:
+        _onConcreteTriviaEvent(
+          (event as ConcreteNumberTriviaEvent).numberString,
+          stateEmitter,
+        );
+        break;
 
-      stateEmitter(Empty());
-      inputEither.fold(
-        (failure) =>
-            stateEmitter(Error(message: INVALID_INPUT_FAILURE_MESSAGE)),
-        (integer) async {
-          stateEmitter(Loading());
-          final triviaOrFailure =
-              await concreteNumberTrivia(NumberParam(integer));
-          stateEmitter(_failureOrTriviaState(triviaOrFailure));
-        },
-      );
-    } else if (event is RandomNumberTriviaEvent) {
-      stateEmitter(Loading());
-      final failureOrRandomTrivia = await randomNumberTrivia(NoParams());
-      stateEmitter(_failureOrTriviaState(failureOrRandomTrivia));
+      case RandomNumberTriviaEvent:
+        _onRandomTriviaEvent(stateEmitter);
+        break;
+
+      default:
+        throw UnimplementedError();
     }
   }
 
@@ -88,5 +78,24 @@ class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
     );
   }
 
-  void _handleConcreteNumberTriviaEvent(numberString) {}
+  void _onConcreteTriviaEvent(
+      String numberString, Emitter<NumberTriviaState> stateEmitter) {
+    final inputEither = inputConverter.stringToUnsignedInteger(numberString);
+    stateEmitter(Empty());
+    inputEither.fold(
+      (failure) => stateEmitter(Error(message: INVALID_INPUT_FAILURE_MESSAGE)),
+      (integer) async {
+        stateEmitter(Loading());
+        final triviaOrFailure =
+            await concreteNumberTrivia(NumberParam(integer));
+        stateEmitter(_failureOrTriviaState(triviaOrFailure));
+      },
+    );
+  }
+
+  void _onRandomTriviaEvent(Emitter<NumberTriviaState> stateEmitter) async {
+    stateEmitter(Loading());
+    final failureOrRandomTrivia = await randomNumberTrivia(NoParams());
+    stateEmitter(_failureOrTriviaState(failureOrRandomTrivia));
+  }
 }
