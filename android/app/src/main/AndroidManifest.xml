@@ -2,6 +2,7 @@
     package="com.mnisiddique.number_trivia">
    <application
         android:label="number_trivia"
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

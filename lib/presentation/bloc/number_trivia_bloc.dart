@@ -15,7 +15,7 @@ part 'number_trivia_event.dart';
 part 'number_trivia_state.dart';
 
 const String SERVER_FAILURE_MESSAGE = 'Server Failure';
-const String CACHE_FAILURE_MESSAGE = 'Cache Failure';
+const String CACHE_FAILURE_MESSAGE = 'No Cached Trivia';
 const String INVALID_INPUT_FAILURE_MESSAGE =
     'Invalid Input - The number must be a positive integer or zero.';
 
@@ -44,14 +44,14 @@ class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
   ) async {
     switch (event.runtimeType) {
       case ConcreteNumberTriviaEvent:
-        _onConcreteTriviaEvent(
+        await _onConcreteTriviaEvent(
           (event as ConcreteNumberTriviaEvent).numberString,
           stateEmitter,
         );
         break;
 
       case RandomNumberTriviaEvent:
-        _onRandomTriviaEvent(stateEmitter);
+        await _onRandomTriviaEvent(stateEmitter);
         break;
 
       default:
@@ -78,12 +78,13 @@ class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
     );
   }
 
-  void _onConcreteTriviaEvent(
-      String numberString, Emitter<NumberTriviaState> stateEmitter) {
+  FutureOr<void> _onConcreteTriviaEvent(
+      String numberString, Emitter<NumberTriviaState> stateEmitter) async {
     final inputEither = inputConverter.stringToUnsignedInteger(numberString);
     stateEmitter(Empty());
-    inputEither.fold(
-      (failure) => stateEmitter(Error(message: INVALID_INPUT_FAILURE_MESSAGE)),
+    await inputEither.fold(
+      (failure) async =>
+          stateEmitter(Error(message: INVALID_INPUT_FAILURE_MESSAGE)),
       (integer) async {
         stateEmitter(Loading());
         final triviaOrFailure =
@@ -93,7 +94,8 @@ class NumberTriviaBloc extends Bloc<NumberTriviaEvent, NumberTriviaState> {
     );
   }
 
-  void _onRandomTriviaEvent(Emitter<NumberTriviaState> stateEmitter) async {
+  FutureOr<void> _onRandomTriviaEvent(
+      Emitter<NumberTriviaState> stateEmitter) async {
     stateEmitter(Loading());
     final failureOrRandomTrivia = await randomNumberTrivia(NoParams());
     stateEmitter(_failureOrTriviaState(failureOrRandomTrivia));

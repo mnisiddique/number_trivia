@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:get_it/get_it.dart';
 import 'package:number_trivia/core/network/network_info.dart';
@@ -14,7 +16,7 @@ import 'package:http/http.dart' as http;
 
 final sl = GetIt.instance;
 
-void init() async {
+FutureOr<void> init() async {
   //! Features
   sl.registerFactory(
     () => NumberTriviaBloc(
